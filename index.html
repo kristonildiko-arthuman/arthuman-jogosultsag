@@ -326,8 +326,8 @@ Ha kérdésed van, válasz e-mailt ide küldd: arthuman@arthuman.hu</textarea>
     <textarea id="info-body" rows="14" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:13px;box-sizing:border-box;"></textarea>
 
     <button class="btn" onclick="sendInfoEmail()" style="margin-top:14px">E-mail küldése → (megnyitja a levelezőt)</button>
-    <button class="btn" onclick="sendInfoTeams()" style="margin-top:8px;background:#5b5fc7">Küldés Teams cseten → (megnyitja a Teamset)</button>
-    <p style="font-size:12px;color:#888;margin-top:10px;">A levél a saját levelezőprogramodban (pl. Outlook), a Teams-üzenet pedig a Teamsben nyílik meg kitöltve – ott át tudod nézni, és a Küldés gombbal el tudod indítani. <strong>A Teams-csethez az illetőnek már el kell fogadnia a Microsoft 365 meghívót</strong>, és aktív Teams-fiókkal kell rendelkeznie.</p>
+    <button class="btn" onclick="sendInfoTeams()" style="margin-top:8px;background:#5b5fc7">Küldés Teams chaten → (megnyitja a Teamset)</button>
+    <p style="font-size:12px;color:#888;margin-top:10px;">A levél a saját levelezőprogramodban (pl. Outlook), a Teams-üzenet pedig a Teamsben nyílik meg kitöltve – ott át tudod nézni, és a Küldés gombbal el tudod indítani. <strong>A Teams-chathez az illetőnek már el kell fogadnia a Microsoft 365 meghívót</strong>, és aktív Teams-fiókkal kell rendelkeznie.</p>
   </div>
 
   <!-- ELTÁVOLÍTÁS -->
@@ -471,12 +471,35 @@ async function persistAccessLog(log) {
   }
 }
 
+// Audit e-mail: minden hozzáférés-megadáskor előkészít egy üzenetet erre a címre,
+// hogy a postafiókodban kereshető, dátumozott nyomod maradjon róla.
+const AUDIT_EMAIL = 'arthuman@arthuman.hu';
+
+function sendAuditEmail(email, system, item, url) {
+  try {
+    const subject = `Hozzáférés megadva – ${email} – ${system}`;
+    const body =
+`Hozzáférés rögzítve az Arthuman jogosultságkezelőben:
+
+Kinek: ${email}
+Rendszer: ${system}
+Mihez: ${item}
+${url ? 'Link: ' + url + '\n' : ''}Mikor: ${new Date().toLocaleString('hu-HU')}
+
+Ez az üzenet automatikusan készült, hogy a hozzáférés-megadás visszakereshető legyen a postafiókodban.`;
+    const mailto = `mailto:${encodeURIComponent(AUDIT_EMAIL)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto, '_blank');
+    addLog(`Audit e-mail előkészítve (${AUDIT_EMAIL}) erről: ${email} – ${system} – nyomd meg a Küldést a levelezőprogramban.`, 'info');
+  } catch(e) {}
+}
+
 async function logAccess(email, system, item, url) {
   if (!email) return;
   const entry = { email, system, item, url: url || '', when: new Date().toISOString() };
   const log = await fetchAccessLog();
   log.granted.push(entry);
   await persistAccessLog(log);
+  sendAuditEmail(email, system, item, url);
   if (document.getElementById('tab-summary')?.classList.contains('active')) renderSummary();
 }
 async function logRevoke(email, system, item) {
@@ -1179,6 +1202,14 @@ function notionSharePage(url, name) {
 // ── Info küldés ──────────────────────────────────────────────────────────────
 const INFO_SENDER = 'kriston.ildiko@arthuman.hu';
 
+// Ez a szöveg minden info-sablonban kötelezően szerepel (Ildikó kérése alapján)
+const INFO_FIXED_TEXT =
+`A következő rendszerekhez kell, hogy legyen hozzáférésed:
+- Microsoft Teams (az általad megadott microsoftos vagy egyéb email címmel): ezen a felületen zajlik a folyamatos chates kommunikáció, itt találod a céges dokumentumokat, nyomtatványokat
+- Google Workspace (az általad megadott gmail email címmel): itt találod a betegdokumentációs és az oktatási anyagokat is a saját google drive-odon  a megosztott mappák között.
+- Monday: a belépési infokat ebben a rendszerben tudod nyomon követni. Kaptál meghívót a céges monday fiókhoz, amibe önállóan kell beregisztrálnod. Ezt követően a saját magad által megadott bejelentkezési adatokkal fogsz belépni.
+- Notion: ez egy háttér rendszer, ahol a belépéshez kapcsolódó cég ismertető anyagok érhetők el. A mondayhoz hasonlóan meghívót kapsz hozzá, ami alapján be kell regisztrálnod. `;
+
 async function generateInfoTemplate() {
   const email = document.getElementById('info-email').value.trim();
   if (!email) { addLog('Add meg a címzett e-mail címét!', 'err'); return; }
@@ -1208,7 +1239,9 @@ async function generateInfoTemplate() {
   document.getElementById('info-body').value =
 `Szia!
 
-Üdvözlünk a csapatban! Az alábbi rendszerekhez kaptál hozzáférést – kattints a linkekre, és jelentkezz be ezzel az e-mail címmel: ${email}
+${INFO_FIXED_TEXT}
+
+Az alábbi konkrét hozzáféréseket kaptad meg – kattints a linkekre, és jelentkezz be ezzel az e-mail címmel: ${email}
 ${list}
 Ha bármelyik linkkel vagy hozzáféréssel gond van, írj nekünk: arthuman@arthuman.hu
 
@@ -1235,10 +1268,10 @@ function sendInfoTeams() {
   if (!email) { addLog('Add meg a címzett e-mail címét!', 'err'); return; }
   if (!body) { addLog('Generálj vagy írj üzenetet előbb!', 'err'); return; }
   if (body.length > 1500) {
-    addLog('Az üzenet elég hosszú – előfordulhat, hogy a Teams link nem nyílik meg helyesen. Ha ez történik, rövidítsd le az üzenetet, vagy másold be kézzel a Teams cseten.', 'info');
+    addLog('Az üzenet elég hosszú – előfordulhat, hogy a Teams link nem nyílik meg helyesen. Ha ez történik, rövidítsd le az üzenetet, vagy másold be kézzel a Teams chaten.', 'info');
   }
   const url = `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}&message=${encodeURIComponent(body)}`;
-  addLog(`Teams cset megnyitása ehhez: ${email} – nézd át, és nyomd meg a Küldést.`, 'ok');
+  addLog(`Teams chat megnyitása ehhez: ${email} – nézd át, és nyomd meg a Küldést.`, 'ok');
   window.open(url, '_blank');
 }
 
