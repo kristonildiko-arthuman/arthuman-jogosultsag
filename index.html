@@ -843,6 +843,58 @@ const GOOGLE_OWNER = 'drkriston@gyogytornaklinika.arthuman.hu';
 let googleToken = null;
 let googleTokenClient = null;
 
+// ── Google munkamenet megőrzése frissítés között ─────────────────────────────
+// A Google access token alapból csak a böngésző memóriájában él, és frissítéskor
+// elveszik. Itt a sessionStorage-ban (csak ennél a lapnál/fülnél, kb. 1 óráig
+// érvényes) eltesszük, hogy frissítés után ne kelljen újra bejelentkezni –
+// kijelentkezéskor vagy lejáratkor automatikusan törlődik.
+const GOOGLE_TOKEN_KEY = 'arthuman_google_token';
+
+function saveGoogleToken(token, expiresIn) {
+  try {
+    sessionStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({
+      token, expiresAt: Date.now() + (expiresIn || 3600) * 1000
+    }));
+  } catch(e) {}
+}
+function loadGoogleToken() {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(GOOGLE_TOKEN_KEY) || 'null');
+    if (raw && raw.token && raw.expiresAt > Date.now() + 60000) return raw.token;
+  } catch(e) {}
+  return null;
+}
+function clearGoogleToken() {
+  try { sessionStorage.removeItem(GOOGLE_TOKEN_KEY); } catch(e) {}
+}
+
+function applyGoogleLogin(token, email) {
+  googleToken = token;
+  document.getElementById('google-user-info').textContent = email || '';
+  document.getElementById('google-login-required').style.display = 'none';
+  document.getElementById('google-form').style.display = 'block';
+  document.getElementById('gdrive-login-required').style.display = 'none';
+  document.getElementById('gdrive-form').style.display = 'block';
+  loadGoogleGroups();
+  gdLoadRoot();
+}
+
+// Oldalbetöltéskor: ha van még érvényes, korábban elmentett Google token, azzal
+// automatikusan visszaállítjuk a bejelentkezett állapotot – nem kell újra belépni.
+async function restoreGoogleSession() {
+  const token = loadGoogleToken();
+  if (!token) return;
+  try {
+    const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) { clearGoogleToken(); return; }
+    const u = await resp.json();
+    applyGoogleLogin(token, u.email);
+    addLog('Google bejelentkezés visszaállítva az előző munkamenetből: ' + u.email, 'ok');
+  } catch(e) { clearGoogleToken(); }
+}
+
 function googleLogin() {
   if (!googleTokenClient) {
     googleTokenClient = google.accounts.oauth2.initTokenClient({
@@ -850,18 +902,12 @@ function googleLogin() {
       scope: GOOGLE_SCOPES,
       callback: (resp) => {
         if (resp.error) { addLog('Google hiba: ' + resp.error, 'err'); return; }
-        googleToken = resp.access_token;
+        saveGoogleToken(resp.access_token, resp.expires_in);
         fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { 'Authorization': 'Bearer ' + googleToken }
+          headers: { 'Authorization': 'Bearer ' + resp.access_token }
         }).then(r => r.json()).then(u => {
-          document.getElementById('google-user-info').textContent = u.email || '';
-          document.getElementById('google-login-required').style.display = 'none';
-          document.getElementById('google-form').style.display = 'block';
-          document.getElementById('gdrive-login-required').style.display = 'none';
-          document.getElementById('gdrive-form').style.display = 'block';
+          applyGoogleLogin(resp.access_token, u.email);
           addLog('Google bejelentkezve: ' + u.email, 'ok');
-          loadGoogleGroups();
-          gdLoadRoot();
         });
       }
     });
@@ -871,6 +917,7 @@ function googleLogin() {
 
 function googleLogout() {
   googleToken = null;
+  clearGoogleToken();
   document.getElementById('google-login-required').style.display = 'block';
   document.getElementById('google-form').style.display = 'none';
   document.getElementById('gdrive-login-required').style.display = 'block';
@@ -1500,6 +1547,7 @@ function addLog(msg, type = 'info') {
 loadSettings();
 initMsal();  // async, no await needed at top level
 renderSummary();
+restoreGoogleSession();  // async, visszaállítja a Google bejelentkezést, ha van még érvényes mentett token
 </script>
 </body>
 </html>
