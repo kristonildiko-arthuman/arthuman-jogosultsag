@@ -1233,16 +1233,19 @@ async function generateInfoTemplate() {
       list += `  • ${it.item}${it.url ? ' – ' + it.url : ''}\n`;
     });
   });
-  if (!list) list = '\n(Egyelőre nincs rögzített hozzáférés ehhez a címhez – egészítsd ki kézzel.)\n';
+  // A konkrét hozzáférés-lista csak akkor kerül a sablonba, ha valóban van rögzített hozzáférés –
+  // enélkül a "az alábbi hozzáféréseket kaptad meg" mondatnak nincs értelme.
+  let accessBlock = '';
+  if (list) {
+    accessBlock = `\nAz alábbi konkrét hozzáféréseket kaptad meg – kattints a linkekre, és jelentkezz be ezzel az e-mail címmel: ${email}\n${list}`;
+  }
 
   document.getElementById('info-subject').value = 'Üdvözlünk a csapatban – itt vannak a hozzáféréseid';
   document.getElementById('info-body').value =
 `Szia!
 
 ${INFO_FIXED_TEXT}
-
-Az alábbi konkrét hozzáféréseket kaptad meg – kattints a linkekre, és jelentkezz be ezzel az e-mail címmel: ${email}
-${list}
+${accessBlock}
 Ha bármelyik linkkel vagy hozzáféréssel gond van, írj nekünk: arthuman@arthuman.hu
 
 Üdvözlettel,
