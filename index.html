@@ -121,12 +121,25 @@
     <div class="grid2">
       <div>
         <label>Teljes név</label>
-        <input type="text" id="quick-name" placeholder="pl. Kovács Anna">
+        <input type="text" id="quick-name" placeholder="pl. Kovács Anna" oninput="quickNameChanged()">
       </div>
       <div>
         <label>E-mail cím</label>
         <input type="email" id="quick-email" class="sync-email" placeholder="pl. kovacs.anna@gmail.com">
       </div>
+    </div>
+
+    <div style="margin-top:12px;padding:10px 12px;background:#e8f5e9;border-radius:6px;font-size:13px;">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin:0;cursor:pointer;">
+        <input type="checkbox" id="quick-own-group" checked style="width:auto">
+        <strong>Saját Google csoport</strong> létrehozása – a Gmail-cím ennek lesz a tagja, és a Google Drive hozzáféréseket a csoport kapja
+      </label>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+        <span>Csoport e-mail:</span>
+        <input type="text" id="quick-group-email" placeholder="pl. kovacsanna@gyogytornaklinika.arthuman.hu" style="flex:1;min-width:220px;padding:5px 8px;" oninput="this.dataset.edited = this.value ? '1' : ''">
+      </div>
+      <div id="quick-group-status" style="font-size:13px;margin-top:4px;"></div>
+      <div style="font-size:11px;color:#666;margin-top:4px;">A névből automatikusan kitöltődik; ha nálatok más a formátum, írd át. Tulajdonos: <span id="quick-group-owner"></span>. Ha a csoport már létezik, azt használja.</div>
     </div>
 
     <label>Csomag(ok) – pozíció szerint</label>
@@ -381,6 +394,7 @@ Ha kérdésed van, válasz e-mailt ide küldd: arthuman@arthuman.hu</textarea>
         <span>Kijelöltek mentése csomagba (a fenti jogosultsággal):</span>
         <select class="pkg-select" id="gd-pkg-select"></select>
         <button class="btn secondary" onclick="addSelectedToPackage('gdrive')">+ Csomagba</button>
+        <button class="btn secondary" onclick="setPersonalFolderParent()" title="Ebben a mappában jön létre minden új belépőnek egy saját, a nevével elnevezett mappa">📂 Ide jöjjenek a saját mappák</button>
       </div>
     </div>
   </div>
@@ -1833,6 +1847,50 @@ function removePkgItem(id, kind, index) {
   renderPackages();
 }
 
+// Saját mappa: minden új belépőnek létrejön egy, a nevével elnevezett mappa a megadott
+// szülőmappában (pl. Betegdokumentáció), és megkapja hozzá a jogot.
+function setPersonalFolderParent() {
+  const p = pkgById(byId('gd-pkg-select').value);
+  if (!p) { addLog('Előbb hozz létre egy csomagot a Csomagok fülön!', 'err'); return; }
+  const folders = gdSelectedItems.filter(i => i.isFolder);
+  if (folders.length !== 1) { addLog('Pontosan egy mappát jelölj ki (egy kattintás) – ebben jönnek létre a saját mappák.', 'err'); return; }
+  const f = folders[0];
+  p.personalFolder = {
+    parentId: f.id, parentName: f.name, driveId: gdCurrentDriveId || null,
+    role: p.personalFolder?.role || 'writer', nameTemplate: p.personalFolder?.nameTemplate || '{név}'
+  };
+  savePackages();
+  renderPackages();
+  addLog(`✓ „${p.name}” csomag: a saját mappák helye mostantól „${f.name}”.`, 'ok');
+}
+function setPersonalFolderField(id, field, value) {
+  const p = pkgById(id);
+  if (p && p.personalFolder) { p.personalFolder[field] = value; savePackages(); }
+}
+function removePersonalFolder(id) {
+  const p = pkgById(id);
+  if (p) { delete p.personalFolder; savePackages(); renderPackages(); }
+}
+function personalFolderName(template, name) {
+  return (template || '{név}').replace(/\{n[ée]v\}/gi, name).trim() || name;
+}
+function pkgPersonalSection(p) {
+  const pf = p.personalFolder;
+  if (!pf) return `<div class="pkg-sec"><div class="pkg-sec-title">📂 Saját Google Drive mappa az új belépőnek</div>
+    <div style="font-size:12px;color:#888;">Nincs beállítva – a Google Drive fülön jelöld ki a szülőmappát (pl. Betegdokumentáció), válaszd ki ezt a csomagot, és nyomd meg a „📂 Ide jöjjenek a saját mappák” gombot.</div></div>`;
+  return `<div class="pkg-sec"><div class="pkg-sec-title">📂 Saját Google Drive mappa az új belépőnek</div>
+    <div class="plan-row" style="flex-wrap:wrap;">
+      Hely: <strong>📁 ${esc(pf.parentName)}</strong> › mappa neve:
+      <input type="text" value="${esc(pf.nameTemplate)}" style="width:200px;padding:3px 6px;font-size:12px;" title="A {név} helyére az új munkatárs neve kerül"
+        onchange="setPersonalFolderField('${jsq(p.id)}','nameTemplate',this.value)">
+      <select style="width:auto;padding:3px 6px;font-size:12px;" onchange="setPersonalFolderField('${jsq(p.id)}','role',this.value)">
+        ${[['writer', '✏️ Szerkesztés'], ['commenter', '💬 Megjegyzés'], ['reader', '📖 Olvasás']].map(([v, l]) => `<option value="${v}" ${pf.role === v ? 'selected' : ''}>${l}</option>`).join('')}
+      </select>
+      <button onclick="removePersonalFolder('${jsq(p.id)}')" title="Kikapcsolás" style="background:none;border:none;color:#c00;cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div style="font-size:11px;color:#888;">A {név} helyére az új munkatárs neve kerül, pl. „{név} – betegdokumentáció”.</div></div>`;
+}
+
 function addSelectedToPackage(kind) {
   const p = pkgById(byId(kind === 'gdrive' ? 'gd-pkg-select' : 'od-pkg-select').value);
   if (!p) { addLog('Előbb hozz létre egy csomagot a Csomagok fülön!', 'err'); return; }
@@ -1907,6 +1965,7 @@ function renderPackages() {
       ${pkgCheckSection(p, 'googleGroups', '👥 Google csoportok',
           allGoogleGroups.map(g => ({ key: g.email, name: g.name })), p.googleGroups.map(x => ({ key: x.email, name: x.name })),
           googleToken ? 'Nem található Google csoport.' : 'Jelentkezz be Google-lel (Csoport fül) a lista betöltéséhez.')}
+      ${pkgPersonalSection(p)}
       ${pkgItemsSection(p, 'gdrive', '🟢 Google Drive mappák / fájlok', 'Még üres – a Google Drive fülön jelöld ki a mappákat, és nyomd meg a „+ Csomagba” gombot.')}
       ${pkgItemsSection(p, 'onedrive', '📁 OneDrive mappák / fájlok', 'Még üres – a OneDrive fülön jelöld ki a mappákat, és nyomd meg a „+ Csomagba” gombot.')}
       ${pkgCheckSection(p, 'monday', '📋 Monday boardok',
@@ -1926,6 +1985,7 @@ let quickRunning = false;
 const QUICK_KIND_TITLE = {
   teams: '💬 Microsoft Teams csapatok',
   googleGroups: '👥 Google csoportok',
+  gfolder: '📂 Saját Google Drive mappa (létrehozás + megosztás)',
   gdrive: '🟢 Google Drive',
   onedrive: '📁 OneDrive',
   monday: '📋 Monday (kézi lépés – a végén egy kattintás)',
@@ -1964,6 +2024,8 @@ function buildQuickPlan() {
     ensurePkgShape(p);
     p.teams.forEach(t => add('teams:' + t.id, 'teams', t.name, t));
     p.googleGroups.forEach(g => add('gg:' + g.email, 'googleGroups', g.name, g));
+    if (p.personalFolder) add('pf:' + p.personalFolder.parentId, 'gfolder',
+      `${p.personalFolder.parentName} › ${personalFolderName(p.personalFolder.nameTemplate, byId('quick-name')?.value.trim() || '[név]')}`, p.personalFolder);
     p.gdrive.forEach(d => add('gd:' + d.id, 'gdrive', d.name, d));
     p.onedrive.forEach(d => add('od:' + d.id, 'onedrive', d.name, d));
     p.monday.forEach(m => add('mo:' + m.url, 'monday', m.name, m));
@@ -1998,6 +2060,45 @@ function setQuickStatus(x, html) {
   if (el) el.innerHTML = html;
 }
 
+// ── Saját Google csoport ─────────────────────────────────────────────────────
+// Minden munkatárs kap egy saját csoportot (pl. kovacs.anna@...), ennek tagja a Gmail-címe,
+// és a Google Drive megosztásokat a csoport kapja – így kilépéskor elég a csoportból kivenni.
+function slugifyName(name) {
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');   // Kovács Ágnes → kovacsagnes
+}
+function quickNameChanged() {
+  const ge = byId('quick-group-email');
+  if (!ge.dataset.edited) {
+    const slug = slugifyName(byId('quick-name').value);
+    ge.value = slug ? `${slug}@${GOOGLE_DOMAIN}` : '';
+  }
+  if (quickPlan.some(x => x.kind === 'gfolder')) renderQuickPlan();
+}
+
+async function addGoogleMember(groupEmail, memberEmail, role) {
+  // Frissen létrehozott csoportnál pár másodpercig 404/400 jöhet – újrapróbálkozunk
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const r = await gapi('POST', `https://admin.googleapis.com/admin/directory/v1/groups/${encodeURIComponent(groupEmail)}/members`,
+      { email: memberEmail, role });
+    if (r.ok || r.status === 409) return { ok: true, already: r.status === 409 };
+    if ((r.status === 404 || r.status === 400) && attempt < 5) { await sleep(2500); continue; }
+    return { ok: false, msg: errMsg(r) };
+  }
+  return { ok: false, msg: 'időtúllépés' };
+}
+
+async function ensureOwnGroup(name, groupEmail, memberEmail) {
+  const c = await gapi('POST', 'https://admin.googleapis.com/admin/directory/v1/groups', { email: groupEmail, name });
+  const existed = c.status === 409;
+  if (!c.ok && !existed) return { ok: false, msg: 'csoport létrehozása: ' + errMsg(c) };
+  const owner = await addGoogleMember(groupEmail, GOOGLE_OWNER, 'OWNER');
+  if (!owner.ok) addLog(`⚠ Tulajdonos (${GOOGLE_OWNER}) hozzáadása a(z) ${groupEmail} csoporthoz nem sikerült: ${owner.msg}`, 'err');
+  const member = await addGoogleMember(groupEmail, memberEmail, 'MEMBER');
+  if (!member.ok) return { ok: false, msg: `${existed ? 'a csoport már létezett, de ' : 'csoport kész, de '}tag hozzáadása: ${member.msg}` };
+  return { ok: true, existed };
+}
+
 async function runQuickOnboard() {
   if (quickRunning) return;
   const name = byId('quick-name').value.trim();
@@ -2007,8 +2108,11 @@ async function runQuickOnboard() {
   const todo = quickPlan.filter(x => x.checked);
   const doInvite = byId('quick-ms-invite').checked;
   const needMs = doInvite || todo.some(x => x.kind === 'teams' || x.kind === 'onedrive');
-  const needGoogle = todo.some(x => x.kind === 'googleGroups' || x.kind === 'gdrive');
-  if (!doInvite && !todo.length) { addLog('Nincs mit megadni – válassz csomagot, vagy pipáld be a meghívót.', 'err'); return; }
+  const ownGroup = byId('quick-own-group').checked;
+  const groupEmail = byId('quick-group-email').value.trim().toLowerCase();
+  if (ownGroup && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(groupEmail)) { addLog('Add meg a saját csoport e-mail címét (vagy vedd ki a pipát).', 'err'); return; }
+  const needGoogle = ownGroup || todo.some(x => x.kind === 'googleGroups' || x.kind === 'gdrive' || x.kind === 'gfolder');
+  if (!doInvite && !ownGroup && !todo.length) { addLog('Nincs mit megadni – válassz csomagot, vagy pipáld be a meghívót.', 'err'); return; }
   if (needMs && !currentAccount) { addLog('Ehhez Microsoft bejelentkezés kell (lásd a jelzőt a fül tetején).', 'err'); return; }
   if (needGoogle && !googleToken) { addLog('Ehhez Google bejelentkezés kell (lásd a jelzőt a fül tetején).', 'err'); return; }
 
@@ -2071,19 +2175,69 @@ async function runQuickOnboard() {
       } else done(x, false, errMsg(r));
     }
 
-    // 3. Google Drive
+    // 3. Saját Google csoport – a Drive megosztásokat ez kapja
+    let driveTarget = { type: 'user', emailAddress: email, label: '' };
+    if (ownGroup) {
+      const gs = byId('quick-group-status');
+      gs.innerHTML = '<span class="st-run">⏳ Csoport létrehozása...</span>';
+      const g = await ensureOwnGroup(name, groupEmail, email);
+      if (g.ok) {
+        ok++;
+        gs.innerHTML = `<span class="st-ok">✓ ${esc(groupEmail)} ${g.existed ? 'már létezett' : 'létrehozva'}, ${esc(email)} hozzáadva tagként</span>`;
+        logAccess(email, 'Google Workspace csoport', `Saját csoport: ${name} (${groupEmail})`,
+          `https://groups.google.com/a/${GOOGLE_DOMAIN}/g/${encodeURIComponent(groupEmail.split('@')[0])}`);
+        driveTarget = { type: 'group', emailAddress: groupEmail, label: ` – csoporton át: ${groupEmail}` };
+        loadGoogleGroups();
+      } else {
+        fail++;
+        gs.innerHTML = `<span class="st-err">✗ ${esc(g.msg)}</span>`;
+        driveTarget = null;   // ne osszuk meg csoport helyett közvetlenül a Gmail-címmel
+      }
+    }
+    const noTarget = 'nincs saját csoport – a Drive megosztás kimaradt';
+
+    // 4. Saját Google Drive mappa – ha már van ilyen nevű, azt használjuk, nem hozunk létre másodikat
+    for (const x of todo.filter(x => x.kind === 'gfolder')) {
+      if (!driveTarget) { done(x, false, noTarget); continue; }
+      setQuickStatus(x, RUN);
+      const pf = x.data;
+      const folderName = personalFolderName(pf.nameTemplate, name);
+      const qn = folderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const q = `name='${qn}' and '${pf.parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+      const found = await gapi('GET', `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,webViewLink)`
+        + (pf.driveId ? `&corpora=drive&driveId=${pf.driveId}` : ''));
+      let folder = found.ok ? (found.data.files || [])[0] : null;
+      let created = false;
+      if (!folder) {
+        const c = await gapi('POST', 'https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name,webViewLink',
+          { name: folderName, mimeType: 'application/vnd.google-apps.folder', parents: [pf.parentId] });
+        if (!c.ok) { done(x, false, 'mappa létrehozása: ' + errMsg(c)); continue; }
+        folder = c.data;
+        created = true;
+      }
+      const role = pf.role || 'writer';
+      const r = await gapi('POST', `https://www.googleapis.com/drive/v3/files/${folder.id}/permissions?supportsAllDrives=true`,
+        { role, type: driveTarget.type, emailAddress: driveTarget.emailAddress });
+      if (r.ok) {
+        done(x, true, created ? 'létrehozva + megosztva' : 'már létezett, megosztva');
+        logAccess(email, 'Google Drive', `Saját mappa: ${folderName} (${ROLE_LABEL[role]})${driveTarget.label}`, folder.webViewLink || 'https://drive.google.com', { fileId: folder.id });
+      } else done(x, false, (created ? 'mappa kész, de megosztás: ' : '') + errMsg(r));
+    }
+
+    // 5. Google Drive
     for (const x of todo.filter(x => x.kind === 'gdrive')) {
+      if (!driveTarget) { done(x, false, noTarget); continue; }
       setQuickStatus(x, RUN);
       const role = x.data.role || 'reader';
       const r = await gapi('POST', `https://www.googleapis.com/drive/v3/files/${x.data.id}/permissions?supportsAllDrives=true`,
-        { role, type: 'user', emailAddress: email });
+        { role, type: driveTarget.type, emailAddress: driveTarget.emailAddress });
       if (r.ok) {
         done(x, true, 'megosztva');
-        logAccess(email, 'Google Drive', `${x.name} (${ROLE_LABEL[role]})`, x.data.url || 'https://drive.google.com', { fileId: x.data.id });
+        logAccess(email, 'Google Drive', `${x.name} (${ROLE_LABEL[role]})${driveTarget.label}`, x.data.url || 'https://drive.google.com', { fileId: x.data.id });
       } else done(x, false, errMsg(r));
     }
 
-    // 4. OneDrive
+    // 6. OneDrive
     for (const x of todo.filter(x => x.kind === 'onedrive')) {
       setQuickStatus(x, RUN);
       const role = x.data.role === 'write' ? 'write' : 'read';
@@ -2423,6 +2577,7 @@ function addLog(msg, type = 'info') {
 loadSettings();
 initEmailSync();
 renderAuditBar();
+byId('quick-group-owner').textContent = GOOGLE_OWNER;
 packages = loadPackagesLocal();
 renderPackages();
 renderLoginChips();
