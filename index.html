@@ -405,11 +405,23 @@ Ha kérdésed van, válasz e-mailt ide küldd: arthuman@arthuman.hu</textarea>
 
     <label>Munkatárs e-mail címe</label>
     <input type="email" id="monday-email" class="sync-email" placeholder="pl. kovacs.anna@gmail.com">
-    <p style="font-size:12px;color:#888;margin-top:4px;margin-bottom:16px;">Az e-mail automatikusan vágólapra kerül minden megnyitásnál – csak illeszd be a Monday meghívó/Hozzáadás mezőbe.</p>
 
-    <div id="monday-boards-list">
-      <div style="color:#888;font-size:13px;">Még nincsenek boardok beállítva. Add hozzá őket a Beállítások fülön.</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <label style="margin:0;">Mihez kapjon hozzáférést?</label>
+      <select id="monday-pkg-select" style="width:auto;flex:1;min-width:180px;padding:5px 8px;" onchange="linkSelectPackage('monday', this.value)"></select>
     </div>
+    <p style="font-size:12px;color:#888;margin:4px 0 6px;">Pipáld be, vagy válassz csomagot – akkor a csomagban beállított boardok jelölődnek ki.</p>
+    <div id="monday-list" class="group-list" style="max-height:260px;"></div>
+
+    <div class="pkg-add-row">
+      <span>+ Új board a listába:</span>
+      <input type="text" id="monday-tab-name" placeholder="Board neve" style="flex:1;min-width:120px;padding:5px 8px;">
+      <input type="text" id="monday-tab-url" placeholder="Monday board URL" style="flex:2;min-width:160px;padding:5px 8px;" onkeydown="if(event.key==='Enter')addLink('monday','tab')">
+      <button class="btn secondary" onclick="addLink('monday','tab')">+ Hozzáad</button>
+    </div>
+
+    <button class="btn" id="monday-run-btn" onclick="linkRun('monday')">Kijelöltek megosztása →</button>
+    <p style="font-size:12px;color:#888;margin-top:8px;">A böngésző egy kattintásra csak egy új lapot enged megnyitni, ezért a gomb sorban halad: minden kattintás megnyitja a következő kijelöltet, és vágólapra teszi az e-mail címet – a boardon az Invite / Hozzáadás mezőbe csak illeszd be (Ctrl+V).</p>
   </div>
 
   <!-- NOTION -->
@@ -418,11 +430,23 @@ Ha kérdésed van, válasz e-mailt ide küldd: arthuman@arthuman.hu</textarea>
 
     <label>Munkatárs e-mail címe</label>
     <input type="email" id="notion-email" class="sync-email" placeholder="pl. kovacs.anna@gmail.com">
-    <p style="font-size:12px;color:#888;margin-top:4px;margin-bottom:16px;">Az e-mail automatikusan vágólapra kerül minden megnyitásnál – csak illeszd be a Notion Share mezőbe.</p>
 
-    <div id="notion-pages-list">
-      <div style="color:#888;font-size:13px;">Még nincsenek oldalak beállítva. Add hozzá őket a Beállítások fülön.</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <label style="margin:0;">Mihez kapjon hozzáférést?</label>
+      <select id="notion-pkg-select" style="width:auto;flex:1;min-width:180px;padding:5px 8px;" onchange="linkSelectPackage('notion', this.value)"></select>
     </div>
+    <p style="font-size:12px;color:#888;margin:4px 0 6px;">Pipáld be, vagy válassz csomagot – akkor a csomagban beállított oldalak jelölődnek ki.</p>
+    <div id="notion-list" class="group-list" style="max-height:260px;"></div>
+
+    <div class="pkg-add-row">
+      <span>+ Új oldal a listába:</span>
+      <input type="text" id="notion-tab-name" placeholder="Oldal neve" style="flex:1;min-width:120px;padding:5px 8px;">
+      <input type="text" id="notion-tab-url" placeholder="Notion oldal URL" style="flex:2;min-width:160px;padding:5px 8px;" onkeydown="if(event.key==='Enter')addLink('notion','tab')">
+      <button class="btn secondary" onclick="addLink('notion','tab')">+ Hozzáad</button>
+    </div>
+
+    <button class="btn" id="notion-run-btn" onclick="linkRun('notion')">Kijelöltek megosztása →</button>
+    <p style="font-size:12px;color:#888;margin-top:8px;">A böngésző egy kattintásra csak egy új lapot enged megnyitni, ezért a gomb sorban halad: minden kattintás megnyitja a következő kijelöltet, és vágólapra teszi az e-mail címet – a Notionban a Share / Megosztás mezőbe csak illeszd be (Ctrl+V).</p>
   </div>
 
   <!-- INFO KÜLDÉS -->
@@ -470,7 +494,7 @@ Ha kérdésed van, válasz e-mailt ide küldd: arthuman@arthuman.hu</textarea>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input type="text" id="notion-page-name" placeholder="Oldal neve (pl. Onboarding)" style="flex:1">
         <input type="text" id="notion-page-url" placeholder="Notion URL" style="flex:2">
-        <button class="btn" onclick="addNotionPage()" style="margin-top:0;white-space:nowrap">+ Hozzáad</button>
+        <button class="btn" onclick="addLink('notion','settings')" style="margin-top:0;white-space:nowrap">+ Hozzáad</button>
       </div>
       <div id="notion-pages-settings" style="min-height:40px;"></div>
     </div>
@@ -481,7 +505,7 @@ Ha kérdésed van, válasz e-mailt ide küldd: arthuman@arthuman.hu</textarea>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input type="text" id="monday-board-name" placeholder="Board neve (pl. Onboarding)" style="flex:1">
         <input type="text" id="monday-board-url" placeholder="Monday board URL" style="flex:2">
-        <button class="btn" onclick="addMondayBoard()" style="margin-top:0;white-space:nowrap">+ Hozzáad</button>
+        <button class="btn" onclick="addLink('monday','settings')" style="margin-top:0;white-space:nowrap">+ Hozzáad</button>
       </div>
       <div id="monday-boards-settings" style="min-height:40px;"></div>
     </div>
@@ -727,11 +751,8 @@ function loadSettings() {
     document.getElementById('cfg-tenant').value = s.tenantId;
     document.getElementById('cfg-client').value = s.clientId;
     document.getElementById('cfg-api').value = s.apiUrl || '';
-    renderNotionPages(s.notionPages || []);
-    renderNotionPagesList(s.notionPages || []);
-    const mondayBoards = s.mondayBoards || DEFAULT_MONDAY_BOARDS;
-    renderMondayBoards(mondayBoards);
-    renderMondayBoardsList(mondayBoards);
+    renderLinks('notion');
+    renderLinks('monday');
     return s;
   } catch(e) { return {}; }
 }
@@ -1184,136 +1205,145 @@ async function createNewGroup() {
   } catch(e) { addLog('Hiba: ' + e.message, 'err'); }
 }
 
-// ── Monday.com ───────────────────────────────────────────────────────────────
-// ── Monday (gyors link – Monday API CORS miatt nem hívható böngészőből) ──────
-function addMondayBoard() {
-  const name = document.getElementById('monday-board-name').value.trim();
-  const url = document.getElementById('monday-board-url').value.trim();
-  if (!name || !url) return;
+// ── Monday / Notion (link-listák) ────────────────────────────────────────────
+// Ezek API-ja böngészőből nem hívható (CORS), ezért az app megnyitja az oldalt és
+// vágólapra teszi az e-mail címet. A listák a csomagokkal együtt a OneDrive-on is
+// tárolódnak, így minden gépen ugyanazok.
+const LINK_KINDS = {
+  notion: { cfg: 'notionPages', defaults: [], system: 'Notion', itemPrefix: 'Oldal', icon: '📄', noun: 'oldal',
+            settingsId: 'notion-pages-settings', settingsName: 'notion-page-name', settingsUrl: 'notion-page-url' },
+  monday: { cfg: 'mondayBoards', defaults: DEFAULT_MONDAY_BOARDS, system: 'Monday.com', itemPrefix: 'Board', icon: '📋', noun: 'board',
+            settingsId: 'monday-boards-settings', settingsName: 'monday-board-name', settingsUrl: 'monday-board-url' }
+};
+const linkSel = { notion: new Set(), monday: new Set() };    // kijelölt URL-ek
+const linkDone = { notion: new Set(), monday: new Set() };   // ebben a körben már megnyitott URL-ek
+const linkDoneEmail = { notion: '', monday: '' };
+
+function getLinks(kind) {
+  const k = LINK_KINDS[kind];
+  try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}')[k.cfg] || k.defaults.slice(); } catch(e) { return k.defaults.slice(); }
+}
+function storeLinks(kind, list) {
   const s = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  const boards = s.mondayBoards || DEFAULT_MONDAY_BOARDS.slice();
-  boards.push({ name, url });
-  s.mondayBoards = boards;
+  s[LINK_KINDS[kind].cfg] = list;
   localStorage.setItem(CFG_KEY, JSON.stringify(s));
-  document.getElementById('monday-board-name').value = '';
-  document.getElementById('monday-board-url').value = '';
-  renderMondayBoards(boards);
-  renderMondayBoardsList(boards);
-  addLog(`Monday board hozzáadva: ${name}`, 'ok');
+}
+function setLinks(kind, list) {
+  storeLinks(kind, list);
+  renderLinks(kind);
+  renderPackages();
+  scheduleCloudSave();
 }
 
-function removeMondayBoard(index) {
-  const s = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  const boards = s.mondayBoards || DEFAULT_MONDAY_BOARDS.slice();
-  boards.splice(index, 1);
-  s.mondayBoards = boards;
-  localStorage.setItem(CFG_KEY, JSON.stringify(s));
-  renderMondayBoards(boards);
-  renderMondayBoardsList(boards);
+function addLink(kind, from) {
+  const k = LINK_KINDS[kind];
+  const nameEl = byId(from === 'tab' ? `${kind}-tab-name` : k.settingsName);
+  const urlEl = byId(from === 'tab' ? `${kind}-tab-url` : k.settingsUrl);
+  const name = nameEl.value.trim();
+  const url = urlEl.value.trim();
+  if (!name || !url) { addLog(`Add meg a(z) ${k.noun} nevét és a linkjét!`, 'err'); return; }
+  if (!/^https?:\/\//i.test(url)) { addLog('A link https://-sel kezdődjön (másold ki a böngésző címsorából).', 'err'); return; }
+  const list = getLinks(kind);
+  if (list.some(l => l.url === url)) { addLog('Ez a link már szerepel a listában.', 'err'); return; }
+  list.push({ name, url });
+  linkSel[kind].add(url);
+  setLinks(kind, list);
+  nameEl.value = '';
+  urlEl.value = '';
+  addLog(`${k.system} ${k.noun} hozzáadva: ${name}`, 'ok');
 }
-
-function renderMondayBoards(boards) {
-  const el = document.getElementById('monday-boards-settings');
-  if (!el) return;
-  el.innerHTML = boards.length ? boards.map((b, i) =>
-    `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eee;">
-      <span style="flex:1;font-size:13px;">📋 ${b.name}</span>
-      <span style="flex:2;font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.url}</span>
-      <button onclick="removeMondayBoard(${i})" style="background:none;border:none;color:#c00;cursor:pointer;font-size:16px;">×</button>
-    </div>`
-  ).join('') : '<div style="color:#888;font-size:13px;">Még nincs board hozzáadva.</div>';
+function removeLink(kind, index) {
+  const list = getLinks(kind);
+  const item = list[index];
+  if (!item || !confirm(`Kiveszed a listából: „${item.name}”?`)) return;
+  list.splice(index, 1);
+  linkSel[kind].delete(item.url);
+  setLinks(kind, list);
 }
+// A régi gombok/hívások kedvéért
+function addNotionPage() { addLink('notion', 'settings'); }
+function addMondayBoard() { addLink('monday', 'settings'); }
+function removeNotionPage(i) { removeLink('notion', i); }
+function removeMondayBoard(i) { removeLink('monday', i); }
 
-function renderMondayBoardsList(boards) {
-  const el = document.getElementById('monday-boards-list');
-  if (!el) return;
-  el.innerHTML = boards.length ? boards.map(b =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;margin-bottom:8px;background:white;border:1px solid #e0ddd8;border-radius:8px;">
-      <span style="font-size:14px;font-weight:500;">📋 ${b.name}</span>
-      <button onclick="mondayShareBoard('${b.url}','${b.name}')" class="btn" style="margin-top:0;padding:6px 14px;font-size:13px;">
-        Hozzáférés → (vágólapra + megnyit)
-      </button>
-    </div>`
-  ).join('') : '<div style="color:#888;font-size:13px;">Még nincsenek boardok beállítva. Add hozzá őket a Beállítások fülön.</div>';
+function toggleLink(kind, url, on) {
+  if (on) linkSel[kind].add(url); else linkSel[kind].delete(url);
+  renderLinkButton(kind);
 }
-
-function mondayShareBoard(url, name) {
-  const email = document.getElementById('monday-email').value.trim();
-  if (!email) { addLog('Add meg a munkatárs e-mail címét!', 'err'); return; }
-  navigator.clipboard.writeText(email).catch(() => {});
-  addLog(`✓ ${name} megnyitva – e-mail vágólapra másolva: ${email}. A boardon kattints a "Hozzáadás"/"Invite" gombra, és illeszd be az e-mail címet (vendégként).`, 'ok');
-  logAccess(email, 'Monday.com', `Board: ${name}`, url);
-  window.open(url, '_blank');
-}
-
-// ── Notion ───────────────────────────────────────────────────────────────────
-function notionInvite() {
-  const email = document.getElementById('notion-email').value.trim();
-  if (email) {
-    navigator.clipboard.writeText(email).catch(() => {});
-    addLog(`E-mail vágólapra másolva: ${email} – illeszd be a Notion meghívóba`, 'ok');
+function linkSelectPackage(kind, pkgId) {
+  if (pkgId === '__all') getLinks(kind).forEach(l => linkSel[kind].add(l.url));
+  else if (pkgId === '__none') linkSel[kind].clear();
+  else {
+    const p = pkgById(pkgId);
+    if (p) { linkSel[kind].clear(); (p[kind] || []).forEach(x => linkSel[kind].add(x.url)); }
   }
-  window.open('https://www.notion.so/arthuman/settings/members', '_blank');
+  byId(`${kind}-pkg-select`).value = '';
+  renderLinks(kind);
 }
 
-function addNotionPage() {
-  const name = document.getElementById('notion-page-name').value.trim();
-  const url = document.getElementById('notion-page-url').value.trim();
-  if (!name || !url) return;
-  const s = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  const pages = s.notionPages || [];
-  pages.push({ name, url });
-  s.notionPages = pages;
-  localStorage.setItem(CFG_KEY, JSON.stringify(s));
-  document.getElementById('notion-page-name').value = '';
-  document.getElementById('notion-page-url').value = '';
-  renderNotionPages(pages);
-  renderNotionPagesList(pages);
-  addLog(`Notion oldal hozzáadva: ${name}`, 'ok');
-}
-
-function removeNotionPage(index) {
-  const s = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-  const pages = s.notionPages || [];
-  pages.splice(index, 1);
-  s.notionPages = pages;
-  localStorage.setItem(CFG_KEY, JSON.stringify(s));
-  renderNotionPages(pages);
-  renderNotionPagesList(pages);
-}
-
-function renderNotionPages(pages) {
-  const el = document.getElementById('notion-pages-settings');
-  if (!el) return;
-  el.innerHTML = pages.length ? pages.map((p, i) =>
+function renderLinks(kind) {
+  const k = LINK_KINDS[kind];
+  const list = getLinks(kind);
+  // Beállítások fül
+  const st = byId(k.settingsId);
+  if (st) st.innerHTML = list.length ? list.map((l, i) =>
     `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eee;">
-      <span style="flex:1;font-size:13px;">📄 ${p.name}</span>
-      <span style="flex:2;font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.url}</span>
-      <button onclick="removeNotionPage(${i})" style="background:none;border:none;color:#c00;cursor:pointer;font-size:16px;">×</button>
-    </div>`
-  ).join('') : '<div style="color:#888;font-size:13px;">Még nincs oldal hozzáadva.</div>';
-}
-
-function renderNotionPagesList(pages) {
-  const el = document.getElementById('notion-pages-list');
+      <span style="flex:1;font-size:13px;">${k.icon} ${esc(l.name)}</span>
+      <span style="flex:2;font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.url)}</span>
+      <button onclick="removeLink('${kind}', ${i})" style="background:none;border:none;color:#c00;cursor:pointer;font-size:16px;">×</button>
+    </div>`).join('') : `<div style="color:#888;font-size:13px;">Még nincs ${k.noun} hozzáadva.</div>`;
+  // Saját fül
+  const el = byId(`${kind}-list`);
   if (!el) return;
-  el.innerHTML = pages.length ? pages.map(p =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;margin-bottom:8px;background:white;border:1px solid #e0ddd8;border-radius:8px;">
-      <span style="font-size:14px;font-weight:500;">📄 ${p.name}</span>
-      <button onclick="notionSharePage('${p.url}','${p.name}')" class="btn" style="margin-top:0;padding:6px 14px;font-size:13px;">
-        Megosztás → (vágólapra + megnyit)
-      </button>
-    </div>`
-  ).join('') : '<div style="color:#888;font-size:13px;">Még nincsenek oldalak beállítva. Add hozzá őket a Beállítások fülön.</div>';
+  el.innerHTML = list.length ? list.map((l, i) => `<div class="plan-row">
+      <label style="display:flex;align-items:center;gap:8px;margin:0;font-weight:normal;flex:1;cursor:pointer;">
+        <input type="checkbox" ${linkSel[kind].has(l.url) ? 'checked' : ''} onchange="toggleLink('${kind}', '${jsq(l.url)}', this.checked)">
+        ${k.icon} ${esc(l.name)}
+      </label>
+      <span class="st">${linkDone[kind].has(l.url) ? '<span class="st-ok">✓ megnyitva</span>' : ''}</span>
+      <a href="${esc(l.url)}" target="_blank" title="Megnyitás (naplózás nélkül)" style="font-size:12px;color:#0078d4;">↗</a>
+      <button onclick="removeLink('${kind}', ${i})" title="Kivétel a listából" style="background:none;border:none;color:#c00;cursor:pointer;font-size:16px;">×</button>
+    </div>`).join('')
+    : `<div style="color:#888;font-size:13px;padding:8px;">Még nincs ${k.noun} a listában – add hozzá lent a nevével és a linkjével.</div>`;
+  // Csomag-választó
+  const sel = byId(`${kind}-pkg-select`);
+  if (sel) {
+    const withItems = packages.filter(p => (p[kind] || []).length);
+    sel.innerHTML = `<option value="">– Kijelölés csomag szerint –</option>`
+      + withItems.map(p => `<option value="${esc(p.id)}">📦 ${esc(p.name)} (${p[kind].length})</option>`).join('')
+      + `<option value="__all">✓ Mindet kijelöl</option><option value="__none">✗ Kijelölés törlése</option>`;
+  }
+  renderLinkButton(kind);
 }
 
-function notionSharePage(url, name) {
-  const email = document.getElementById('notion-email').value.trim();
+function renderLinkButton(kind) {
+  const btn = byId(`${kind}-run-btn`);
+  if (!btn) return;
+  const chosen = getLinks(kind).filter(l => linkSel[kind].has(l.url));
+  const done = chosen.filter(l => linkDone[kind].has(l.url)).length;
+  const next = chosen.find(l => !linkDone[kind].has(l.url));
+  btn.classList.toggle('secondary', !next && chosen.length > 0);
+  btn.textContent = !chosen.length ? 'Kijelöltek megosztása →'
+    : !done ? `Kijelöltek megosztása (${chosen.length}) – első: ${next.name} →`
+    : next ? `Következő: ${next.name} (${done + 1}/${chosen.length}) →`
+    : `✓ Mind a ${chosen.length} megnyitva`;
+}
+
+function linkRun(kind) {
+  const k = LINK_KINDS[kind];
+  const email = byId(`${kind}-email`).value.trim();
   if (!email) { addLog('Add meg a munkatárs e-mail címét!', 'err'); return; }
+  if (linkDoneEmail[kind] !== email) { linkDone[kind].clear(); linkDoneEmail[kind] = email; }
+  const chosen = getLinks(kind).filter(l => linkSel[kind].has(l.url));
+  if (!chosen.length) { addLog(`Pipáld be, melyik ${k.noun}hoz kapjon hozzáférést!`, 'err'); return; }
+  const next = chosen.find(l => !linkDone[kind].has(l.url));
+  if (!next) { addLog(`Mind a ${chosen.length} kijelölt ${k.noun} meg lett nyitva ehhez: ${email}.`, 'info'); return; }
   navigator.clipboard.writeText(email).catch(() => {});
-  addLog(`✓ ${name} megnyitva – e-mail vágólapra másolva: ${email}`, 'ok');
-  logAccess(email, 'Notion', `Oldal: ${name}`, url);
-  window.open(url, '_blank');
+  window.open(next.url, '_blank');
+  linkDone[kind].add(next.url);
+  logAccess(email, k.system, `${k.itemPrefix}: ${next.name}`, next.url);
+  addLog(`✓ ${next.name} megnyitva – e-mail vágólapra másolva (${email}), illeszd be a megosztás / meghívás mezőbe.`, 'ok');
+  renderLinks(kind);
 }
 
 // ── Info küldés ──────────────────────────────────────────────────────────────
@@ -1757,12 +1787,8 @@ function ensurePkgShape(p) {
   return p;
 }
 function pkgById(id) { return packages.find(p => p.id === id); }
-function getMondayBoards() {
-  try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}').mondayBoards || DEFAULT_MONDAY_BOARDS; } catch(e) { return DEFAULT_MONDAY_BOARDS; }
-}
-function getNotionPages() {
-  try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}').notionPages || []; } catch(e) { return []; }
-}
+function getMondayBoards() { return getLinks('monday'); }
+function getNotionPages() { return getLinks('notion'); }
 
 function loadPackagesLocal() {
   try { return (JSON.parse(localStorage.getItem(PACKAGES_KEY) || '[]') || []).map(ensurePkgShape); } catch(e) { return []; }
@@ -1777,7 +1803,16 @@ async function loadPackages() {
         const d = await resp.json();
         if (Array.isArray(d.packages)) packages = d.packages.map(ensurePkgShape);
         try { localStorage.setItem(PACKAGES_KEY, JSON.stringify(packages)); } catch(e) {}
-      } else if (resp.status === 404 && packages.length) {
+        // Monday/Notion listák: ha a felhőben van, az a mérvadó; ha még nincs, feltöltjük a helyit
+        let upload = false;
+        ['notion', 'monday'].forEach(kind => {
+          const cfg = LINK_KINDS[kind].cfg;
+          if (Array.isArray(d[cfg])) storeLinks(kind, d[cfg]);
+          else if (getLinks(kind).length) upload = true;
+          renderLinks(kind);
+        });
+        if (upload) savePackagesNow();
+      } else if (resp.status === 404 && (packages.length || getLinks('notion').length)) {
         savePackagesNow();  // a helyben létrehozott csomagok felkerülnek a OneDrive-ra
       }
     } catch(e) { addLog('Csomagok betöltése a OneDrive-ról nem sikerült – helyi másolat: ' + e.message, 'err'); }
@@ -1790,6 +1825,9 @@ function savePackages() {
   try { localStorage.setItem(PACKAGES_KEY, JSON.stringify(packages)); } catch(e) {}
   renderPkgSelects();
   renderQuickPackages();
+  scheduleCloudSave();
+}
+function scheduleCloudSave() {
   clearTimeout(pkgSaveTimer);
   pkgSaveTimer = setTimeout(savePackagesNow, 800);
 }
@@ -1800,7 +1838,7 @@ async function savePackagesNow() {
     const resp = await fetch(`https://graph.microsoft.com${PACKAGES_PATH}:/content`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packages })
+      body: JSON.stringify({ packages, notionPages: getLinks('notion'), mondayBoards: getLinks('monday') })
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
   } catch(e) { addLog('Csomagok OneDrive-ra mentése nem sikerült (helyben elmentve): ' + e.message, 'err'); }
@@ -1909,6 +1947,7 @@ function addSelectedToPackage(kind) {
 }
 
 function renderPkgSelects() {
+  ['notion', 'monday'].forEach(kind => { if (byId(`${kind}-pkg-select`)) renderLinks(kind); });
   document.querySelectorAll('.pkg-select').forEach(sel => {
     const cur = sel.value;
     sel.innerHTML = packages.length
